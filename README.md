@@ -1,70 +1,206 @@
-# Getting Started with Create React App
+# Supabase Self-Hosting Guide
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Overview
+Supabase self-hosting allows you to run the complete Supabase platform on your own infrastructure. This gives you full control over your data, customization options, and the ability to meet specific compliance requirements.
 
-## Available Scripts
 
-In the project directory, you can run:
+### Requirements
+- Docker Engine (20.10.0+)
+- Docker Compose (v2.0.0+)
+- Git
 
-### `npm start`
+## Installation and Setup
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### 1. Clone the Repository
+```bash
+git clone https://github.com/supabase/supabase
+cd supabase/docker
+```
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### 2. Configure Environment Variables
+Copy the example environment file:
+```bash
+cp .env.example .env
+```
 
-### `npm test`
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### 3. Essential Environment Variables
+IMPORTANT: Before configuring your .env file, you need to generate several critical keys:
 
-### `npm run build`
+JWT Secret
+Anon Key
+Service Role Key
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Please refer to the official documentation for generating these keys:
+https://supabase.com/docs/guides/self-hosting/docker#generate-api-keys
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```plaintext
+# API Configuration
+API_EXTERNAL_URL=https://your-domain.com
+JWT_SECRET=your-super-secret-jwt-token
 
-### `npm run eject`
+# Database Configuration
+POSTGRES_PASSWORD=your-database-password
+DB_SSL_ENABLED=false
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+# Auth Configuration
+SITE_URL=https://your-domain.com
+ADDITIONAL_REDIRECT_URLS=
+JWT_EXPIRY=3600
+DISABLE_SIGNUP=false
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+# Studio Configuration
+STUDIO_DEFAULT_ORGANIZATION=Default Organization
+STUDIO_DEFAULT_PROJECT=Default Project
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+Note: For complete configuration options and detailed setup instructions,
+refer to: https://supabase.com/docs/guides/self-hosting
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### 4. Initial Deployment
+```bash
+docker compose up -d
+```
 
-## Learn More
+## Modifying Configuration
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### Update Environment Variables
+1. Stop the services:
+```bash
+docker compose down
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+2. Edit the `.env` file:
+```bash
+nano .env
+```
 
-### Code Splitting
+3. Restart services:
+```bash
+docker compose up -d
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### Configuration Files
+- Database: `./volumes/db/postgresql.conf`
+- GoTrue (Auth): `./volumes/auth/config.json`
+- Kong (API Gateway): `./volumes/api/kong.yml`
 
-### Analyzing the Bundle Size
+## Restarting Services
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### Restart All Services
+```bash
+docker compose down
+docker compose up -d
+```
 
-### Making a Progressive Web App
+### Restart Specific Service
+```bash
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+Available services:
+- `kong`: API Gateway
+- `auth`: Authentication
+- `rest`: PostgREST
+- `db`: PostgreSQL
+- `storage`: Storage
+- `imgproxy`: Image Processing
+- `meta`: Metadata
+- `realtime`: Realtime subscriptions
 
-### Advanced Configuration
+## Troubleshooting
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+### Common Issues
 
-### Deployment
+1. **Services Won't Start**
+   - Check Docker logs: `docker compose logs`
+   - Verify port availability
+   - Ensure sufficient system resources
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+2. **Database Connection Issues**
+   - Verify PostgreSQL is running: `docker compose ps db`
+   - Check database logs: `docker compose logs db`
+   - Confirm correct password in .env
 
-### `npm run build` fails to minify
+3. **Auth Service Problems**
+   - Verify JWT_SECRET is set
+   - Check auth logs: `docker compose logs auth`
+   - Ensure SITE_URL is correctly configured
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+### Health Checks
+```bash
+# Check all services status
+docker compose ps
+
+# Check service logs
+docker compose logs 
+```
+
+## Maintenance
+
+### Backup Database
+```bash
+docker compose exec db pg_dump -U postgres > backup.sql
+```
+
+### Update Supabase
+```bash
+git pull origin master
+docker compose pull
+docker compose down
+docker compose up -d
+```
+
+## Client-Side Integration
+
+### Installation
+```bash
+# Using npm
+npm install @supabase/supabase-js
+
+# Using yarn
+yarn add @supabase/supabase-js
+
+# Using pnpm
+pnpm add @supabase/supabase-js
+```
+
+### Configuration
+
+#### Local Development
+```javascript
+const supabaseUrl = 'http://localhost:8000'  // Your local Supabase URL
+const supabaseAnonKey = 'your-anon-key'      // From your .env file
+
+import { createClient } from '@supabase/supabase-js'
+const supabase = createClient(supabaseUrl, supabaseAnonKey)
+```
+
+#### Production
+```javascript
+const supabaseUrl = 'https://your-domain.com'    
+const supabaseAnonKey = 'your-anon-key'     
+
+example
+const supabaseUrl = 'https://localhost:8000'    
+const supabaseAnonKey = 'your-anon-key'     
+
+
+import { createClient } from '@supabase/supabase-js'
+const supabase = createClient(supabaseUrl, supabaseAnonKey)
+```
+
+### Usage Examples
+
+#### Database Operations
+```javascript
+// Fetch data
+const { data, error } = await supabase
+  .from('your_table')
+  .select('*')
+
+// Insert data
+const { data, error } = await supabase
+  .from('your_table')
+  .insert([{ column: 'value' }])
+```
